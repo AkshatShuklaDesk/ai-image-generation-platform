@@ -17,34 +17,20 @@ A full-stack AI image generation platform built with the MERN stack (MongoDB, Ex
 
 ## Setup Instructions
 
-### Option 1: Docker (Recommended)
-1. Ensure Docker and Docker Compose are installed.
-2. Clone this repository.
-3. Rename `.env.example` to `.env` and add your `HF_API_TOKEN` (get one for free at [Hugging Face](https://huggingface.co/settings/tokens)).
-4. Run the following command from the root directory:
-   ```bash
-   docker-compose up --build
-   ```
-5. The application will be available at `http://localhost`.
-
-### Option 2: Local Setup
-1. Ensure Node.js and MongoDB are installed locally.
-2. Clone the repository.
-3. Set up the backend:
+1. Clone the repository.
+2. Set up the backend:
    ```bash
    cd backend
-   cp ../.env.example .env
-   # Edit .env and add your HF_API_TOKEN
    npm install
    npm start
    ```
-4. Set up the frontend:
+3. Set up the frontend:
    ```bash
    cd frontend
    npm install
    npm run dev
    ```
-5. Open your browser and navigate to the frontend URL (usually `http://localhost:5173`).
+4. Open your browser and navigate to `http://localhost:5173`.
 
 ## Usage
 1. Register a new account.
