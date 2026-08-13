@@ -8,31 +8,41 @@ const { protect } = require('../middleware/authMiddleware');
 const generateImageWithHF = async (prompt) => {
   const hfToken = process.env.HF_API_TOKEN;
 
-  if (!hfToken) {
-    throw new Error('Hugging Face API token is missing');
-  }
+  if (hfToken) {
+    const hf = new HfInference(hfToken);
+    const models = [
+      'black-forest-labs/FLUX.1-schnell',
+      'stabilityai/stable-diffusion-xl-base-1.0'
+    ];
 
-  const hf = new HfInference(hfToken);
+    for (const model of models) {
+      try {
+        const blob = await hf.textToImage({
+          model,
+          inputs: prompt
+        });
+        const arrayBuffer = await blob.arrayBuffer();
+        const base64Image = Buffer.from(arrayBuffer).toString('base64');
+        return `data:image/jpeg;base64,${base64Image}`;
+      } catch (error) {
+        console.warn(`Model ${model} rate-limited or busy, trying next...`);
+      }
+    }
+  }
 
   try {
-    const blob = await hf.textToImage({
-      model: 'black-forest-labs/FLUX.1-schnell',
-      inputs: prompt
-    });
-
-    const arrayBuffer = await blob.arrayBuffer();
-    const base64Image = Buffer.from(arrayBuffer).toString('base64');
-    return `data:image/jpeg;base64,${base64Image}`;
-  } catch (error) {
-    const blob = await hf.textToImage({
-      model: 'stabilityai/stable-diffusion-xl-base-1.0',
-      inputs: prompt
-    });
-
-    const arrayBuffer = await blob.arrayBuffer();
-    const base64Image = Buffer.from(arrayBuffer).toString('base64');
-    return `data:image/jpeg;base64,${base64Image}`;
+    const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&nologo=true&seed=${Math.floor(Math.random() * 1000000)}`;
+    const response = await fetch(pollinationsUrl);
+    if (response.ok) {
+      const buffer = await response.arrayBuffer();
+      const base64Image = Buffer.from(buffer).toString('base64');
+      return `data:image/jpeg;base64,${base64Image}`;
+    }
+  } catch (err) {
+    console.warn('Pollinations request error:', err.message);
   }
+
+  throw new Error('All image generation services are currently busy. Please try again in a moment.');
 };
 
 router.post('/', protect, async (req, res) => {
