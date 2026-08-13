@@ -1,37 +1,38 @@
 const express = require('express');
 const router = express.Router();
+const { HfInference } = require('@huggingface/inference');
 const ImageGeneration = require('../models/ImageGeneration');
 const ChatSession = require('../models/ChatSession');
 const { protect } = require('../middleware/authMiddleware');
 
 const generateImageWithHF = async (prompt) => {
-  const model = "stabilityai/stable-diffusion-xl-base-1.0";
   const hfToken = process.env.HF_API_TOKEN;
 
   if (!hfToken) {
     throw new Error('Hugging Face API token is missing');
   }
 
-  const response = await fetch(
-    `https://api-inference.huggingface.co/models/${model}`,
-    {
-      headers: {
-        Authorization: `Bearer ${hfToken}`,
-        "Content-Type": "application/json",
-      },
-      method: "POST",
-      body: JSON.stringify({ inputs: prompt }),
-    }
-  );
+  const hf = new HfInference(hfToken);
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Hugging Face API error: ${errorText}`);
+  try {
+    const blob = await hf.textToImage({
+      model: 'black-forest-labs/FLUX.1-schnell',
+      inputs: prompt
+    });
+
+    const arrayBuffer = await blob.arrayBuffer();
+    const base64Image = Buffer.from(arrayBuffer).toString('base64');
+    return `data:image/jpeg;base64,${base64Image}`;
+  } catch (error) {
+    const blob = await hf.textToImage({
+      model: 'stabilityai/stable-diffusion-xl-base-1.0',
+      inputs: prompt
+    });
+
+    const arrayBuffer = await blob.arrayBuffer();
+    const base64Image = Buffer.from(arrayBuffer).toString('base64');
+    return `data:image/jpeg;base64,${base64Image}`;
   }
-
-  const buffer = await response.arrayBuffer();
-  const base64Image = Buffer.from(buffer).toString('base64');
-  return `data:image/jpeg;base64,${base64Image}`;
 };
 
 router.post('/', protect, async (req, res) => {
